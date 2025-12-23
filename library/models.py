@@ -1,5 +1,8 @@
+from datetime import timedelta
+from django.utils import timezone
 from django.db import models
 from django.contrib.auth.models import User
+from .utils import get_default_due_date
 
 class Author(models.Model):
     first_name = models.CharField(max_length=100)
@@ -40,7 +43,22 @@ class Loan(models.Model):
     member = models.ForeignKey(Member, related_name='loans', on_delete=models.CASCADE)
     loan_date = models.DateField(auto_now_add=True)
     return_date = models.DateField(null=True, blank=True)
+    due_date = models.DateField(default=get_default_due_date)
     is_returned = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.book.title} loaned to {self.member.user.username}"
+
+    def extend_overdue_date(self, days: int):
+        # Check for positive days value
+        if days <= 0:
+            return False
+
+        # Check for already passed due date
+        if self.due_date <= timezone.now().date():
+            return False
+
+        self.due_date += timedelta(days=days)
+        self.save(update_fields=['due_date'])
+
+        return True
