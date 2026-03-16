@@ -54,18 +54,21 @@ class MemberViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def top_active(self, request, pk=None):
-        # members = self.get_queryset().annotate('active_loans'=Count('loans', filter=Q(loans__is_returned=False))).order_by('active_loans'))[:5]
-        #
+        try:
+            members = self.get_queryset().annotate(active_loans=Count('loans', filter=Q(loans__is_returned=False))).order_by('-active_loans')[:5]
 
-        # data = []
-        # for member in members:
-        #     data.append({
-        #         "id": member.id
-        #     })
-        #
+            data = []
+            for member in members:
+                data.append({
+                    "id": member.id,
+                    "username": member.user.username,
+                    "email": member.user.email,
+                    "active_loans": member.active_loans
+                })
 
-        # #uncomplete due to time restriction
-        pass
+            return Response(status=status.HTTP_200_OK, data=data)
+        except Exception as e:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data=e)
 
 
 class LoanViewSet(viewsets.ModelViewSet):
